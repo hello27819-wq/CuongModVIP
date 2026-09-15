@@ -1,0 +1,940 @@
+--========================================================
+-- AIR MOVEMENT 360° - ROBLOX STUDIO
+-- LocalScript:
+-- StarterPlayer > StarterPlayerScripts
+--
+-- C: Ẩn/hiện menu
+-- F: Bật/tắt bay PC
+-- Space: Bay lên
+-- Ctrl: Bay xuống
+-- Joystick: Điều khiển hướng bay
+-- Camera: Quyết định hướng 3D
+-- + / -: Chỉnh tốc độ
+-- Max Speed: 2000
+--========================================================
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+
+--========================================================
+-- SETTINGS
+--========================================================
+
+local flying = false
+
+local speed = 50
+local MIN_SPEED = 10
+local MAX_SPEED = 2000
+
+local ascendKey = false
+local descendKey = false
+
+--========================================================
+-- CHARACTER
+--========================================================
+
+local character
+local humanoid
+local root
+
+local attachment
+local linearVelocity
+
+local function getCharacter()
+	character = player.Character or player.CharacterAdded:Wait()
+
+	humanoid = character:WaitForChild("Humanoid")
+	root = character:WaitForChild("HumanoidRootPart")
+end
+
+getCharacter()
+
+--========================================================
+-- CLEANUP
+--========================================================
+
+local function cleanupFlight()
+
+	if linearVelocity then
+		linearVelocity:Destroy()
+		linearVelocity = nil
+	end
+
+	if attachment then
+		attachment:Destroy()
+		attachment = nil
+	end
+
+	if humanoid then
+		humanoid.AutoRotate = true
+	end
+end
+
+--========================================================
+-- START FLIGHT
+--========================================================
+
+local function startFlight()
+
+	if not character
+		or not humanoid
+		or not root then
+		return
+	end
+
+	cleanupFlight()
+
+	attachment = Instance.new("Attachment")
+	attachment.Name = "AirMovementAttachment"
+	attachment.Parent = root
+
+	linearVelocity = Instance.new("LinearVelocity")
+	linearVelocity.Name = "AirMovementVelocity"
+
+	linearVelocity.Attachment0 = attachment
+
+	linearVelocity.VelocityConstraintMode =
+		Enum.VelocityConstraintMode.Vector
+
+	linearVelocity.RelativeTo =
+		Enum.ActuatorRelativeTo.World
+
+	linearVelocity.MaxForce = math.huge
+
+	linearVelocity.VectorVelocity =
+		Vector3.zero
+
+	linearVelocity.Parent = root
+
+	humanoid.AutoRotate = false
+end
+
+--========================================================
+-- STOP FLIGHT
+--========================================================
+
+local function stopFlight()
+
+	cleanupFlight()
+
+	if root then
+		root.AssemblyLinearVelocity = Vector3.zero
+	end
+end
+
+--========================================================
+-- GUI
+--========================================================
+
+local playerGui =
+	player:WaitForChild("PlayerGui")
+
+local oldGui =
+	playerGui:FindFirstChild("CUONG_AIR_MOVEMENT_360")
+
+if oldGui then
+	oldGui:Destroy()
+end
+
+local gui = Instance.new("ScreenGui")
+
+gui.Name = "CUONG_AIR_MOVEMENT_360"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = false
+
+gui.Parent = playerGui
+
+--========================================================
+-- MAIN MENU
+--========================================================
+
+local main = Instance.new("Frame")
+
+main.Name = "MainMenu"
+
+main.Size =
+	UDim2.fromOffset(230, 150)
+
+main.Position =
+	UDim2.new(0.5, -115, 0.5, -75)
+
+main.BackgroundColor3 =
+	Color3.fromRGB(25, 25, 25)
+
+main.BorderSizePixel = 0
+main.Active = true
+main.Parent = gui
+
+local mainCorner =
+	Instance.new("UICorner")
+
+mainCorner.CornerRadius =
+	UDim.new(0, 8)
+
+mainCorner.Parent = main
+
+local mainStroke =
+	Instance.new("UIStroke")
+
+mainStroke.Thickness = 2
+
+mainStroke.Color =
+	Color3.fromRGB(255, 0, 0)
+
+mainStroke.Parent = main
+
+--========================================================
+-- TITLE
+--========================================================
+
+local title = Instance.new("TextLabel")
+
+title.Name = "Title"
+
+title.Size =
+	UDim2.new(1, 0, 0, 35)
+
+title.BackgroundColor3 =
+	Color3.fromRGB(15, 15, 15)
+
+title.Text =
+	"★ CƯỜNG MOD VIP ° ★"
+
+title.TextColor3 =
+	Color3.fromRGB(255, 255, 255)
+
+title.TextSize = 15
+
+title.Font =
+	Enum.Font.SourceSansBold
+
+title.Active = true
+title.Parent = main
+
+local titleCorner =
+	Instance.new("UICorner")
+
+titleCorner.CornerRadius =
+	UDim.new(0, 8)
+
+titleCorner.Parent = title
+
+--========================================================
+-- MENU DRAG
+--========================================================
+
+local menuDragging = false
+local menuDragStart
+local menuStartPosition
+local menuDragInput
+
+title.InputBegan:Connect(function(input)
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		menuDragging = true
+		menuDragStart = input.Position
+		menuStartPosition = main.Position
+
+		input.Changed:Connect(function()
+
+			if input.UserInputState ==
+				Enum.UserInputState.End then
+
+				menuDragging = false
+
+			end
+
+		end)
+
+	end
+
+end)
+
+title.InputChanged:Connect(function(input)
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseMovement
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		menuDragInput = input
+
+	end
+
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+
+	if input == menuDragInput
+		and menuDragging then
+
+		local delta =
+			input.Position - menuDragStart
+
+		main.Position =
+			UDim2.new(
+				menuStartPosition.X.Scale,
+				menuStartPosition.X.Offset + delta.X,
+
+				menuStartPosition.Y.Scale,
+				menuStartPosition.Y.Offset + delta.Y
+			)
+
+	end
+
+end)
+
+--========================================================
+-- FLY BUTTON
+--========================================================
+
+local flyButton = Instance.new("TextButton")
+
+flyButton.Name = "FlyButton"
+
+flyButton.Size =
+	UDim2.fromOffset(190, 38)
+
+flyButton.Position =
+	UDim2.fromOffset(20, 45)
+
+flyButton.Text =
+	"BAY: TẮT"
+
+flyButton.TextSize = 16
+
+flyButton.Font =
+	Enum.Font.SourceSansBold
+
+flyButton.TextColor3 =
+	Color3.fromRGB(255, 255, 255)
+
+flyButton.BackgroundColor3 =
+	Color3.fromRGB(130, 30, 30)
+
+flyButton.Parent = main
+
+local flyCorner =
+	Instance.new("UICorner")
+
+flyCorner.CornerRadius =
+	UDim.new(0, 6)
+
+flyCorner.Parent = flyButton
+
+--========================================================
+-- SPEED MINUS
+--========================================================
+
+local minusButton =
+	Instance.new("TextButton")
+
+minusButton.Name = "Minus"
+
+minusButton.Size =
+	UDim2.fromOffset(45, 35)
+
+minusButton.Position =
+	UDim2.fromOffset(20, 95)
+
+minusButton.Text = "-"
+
+minusButton.TextSize = 22
+
+minusButton.Font =
+	Enum.Font.SourceSansBold
+
+minusButton.Parent = main
+
+--========================================================
+-- SPEED LABEL
+--========================================================
+
+local speedLabel =
+	Instance.new("TextLabel")
+
+speedLabel.Name = "Speed"
+
+speedLabel.Size =
+	UDim2.fromOffset(100, 35)
+
+speedLabel.Position =
+	UDim2.fromOffset(65, 95)
+
+speedLabel.BackgroundTransparency = 1
+
+speedLabel.Text =
+	"Speed: " .. speed
+
+speedLabel.TextColor3 =
+	Color3.fromRGB(255, 255, 255)
+
+speedLabel.TextSize = 14
+
+speedLabel.Font =
+	Enum.Font.SourceSans
+
+speedLabel.Parent = main
+
+--========================================================
+-- SPEED PLUS
+--========================================================
+
+local plusButton =
+	Instance.new("TextButton")
+
+plusButton.Name = "Plus"
+
+plusButton.Size =
+	UDim2.fromOffset(45, 35)
+
+plusButton.Position =
+	UDim2.fromOffset(165, 95)
+
+plusButton.Text = "+"
+
+plusButton.TextSize = 22
+
+plusButton.Font =
+	Enum.Font.SourceSansBold
+
+plusButton.Parent = main
+
+--========================================================
+-- UPDATE UI
+--========================================================
+
+local function updateUI()
+
+	speedLabel.Text =
+		"Speed: " .. tostring(speed)
+
+	if flying then
+
+		flyButton.Text =
+			"BAY: BẬT"
+
+		flyButton.BackgroundColor3 =
+			Color3.fromRGB(25, 140, 45)
+
+	else
+
+		flyButton.Text =
+			"BAY: TẮT"
+
+		flyButton.BackgroundColor3 =
+			Color3.fromRGB(130, 30, 30)
+
+	end
+
+end
+
+--========================================================
+-- FLY BUTTON EVENT
+--========================================================
+
+flyButton.Activated:Connect(function()
+
+	flying = not flying
+
+	if flying then
+		startFlight()
+	else
+		stopFlight()
+	end
+
+	updateUI()
+
+end)
+
+--========================================================
+-- SPEED BUTTONS
+--========================================================
+
+minusButton.Activated:Connect(function()
+
+	speed =
+		math.max(
+			MIN_SPEED,
+			speed - 10
+		)
+
+	updateUI()
+
+end)
+
+plusButton.Activated:Connect(function()
+
+	speed =
+		math.min(
+			MAX_SPEED,
+			speed + 10
+		)
+
+	updateUI()
+
+end)
+
+--========================================================
+-- NÚT C
+--========================================================
+
+local cButton =
+	Instance.new("TextButton")
+
+cButton.Name = "CButton"
+
+cButton.Size =
+	UDim2.fromOffset(52, 52)
+
+cButton.Position =
+	UDim2.new(
+		0,
+		15,
+		0.5,
+		-26
+	)
+
+cButton.BackgroundColor3 =
+	Color3.fromRGB(30, 30, 30)
+
+cButton.Text = "C"
+
+cButton.TextColor3 =
+	Color3.fromRGB(255, 255, 255)
+
+cButton.TextSize = 24
+
+cButton.Font =
+	Enum.Font.SourceSansBold
+
+cButton.Active = true
+
+cButton.Parent = gui
+
+local cCorner =
+	Instance.new("UICorner")
+
+cCorner.CornerRadius =
+	UDim.new(1, 0)
+
+cCorner.Parent = cButton
+
+local cStroke =
+	Instance.new("UIStroke")
+
+cStroke.Thickness = 2
+
+cStroke.Color =
+	Color3.fromRGB(255, 0, 0)
+
+cStroke.Parent = cButton
+
+--========================================================
+-- KÉO NÚT C
+--========================================================
+
+local cDragging = false
+local cDragStart
+local cStartPosition
+local cDragInput
+
+cButton.InputBegan:Connect(function(input)
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		cDragging = true
+
+		cDragStart =
+			input.Position
+
+		cStartPosition =
+			cButton.Position
+
+		input.Changed:Connect(function()
+
+			if input.UserInputState ==
+				Enum.UserInputState.End then
+
+				cDragging = false
+
+			end
+
+		end)
+
+	end
+
+end)
+
+cButton.InputChanged:Connect(function(input)
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseMovement
+		or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		cDragInput = input
+
+	end
+
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+
+	if input == cDragInput
+		and cDragging then
+
+		local delta =
+			input.Position - cDragStart
+
+		cButton.Position =
+			UDim2.new(
+				cStartPosition.X.Scale,
+				cStartPosition.X.Offset + delta.X,
+
+				cStartPosition.Y.Scale,
+				cStartPosition.Y.Offset + delta.Y
+			)
+
+	end
+
+end)
+
+--========================================================
+-- CLICK C
+--========================================================
+
+cButton.Activated:Connect(function()
+
+	main.Visible =
+		not main.Visible
+
+end)
+
+--========================================================
+-- KEYBOARD
+--========================================================
+
+UserInputService.InputBegan:Connect(function(
+	input,
+	processed
+)
+
+	if processed then
+		return
+	end
+
+	if input.KeyCode ==
+		Enum.KeyCode.C then
+
+		main.Visible =
+			not main.Visible
+
+	end
+
+	if input.KeyCode ==
+		Enum.KeyCode.F then
+
+		flying =
+			not flying
+
+		if flying then
+			startFlight()
+		else
+			stopFlight()
+		end
+
+		updateUI()
+
+	end
+
+	if input.KeyCode ==
+		Enum.KeyCode.Space then
+
+		ascendKey = true
+
+	end
+
+	if input.KeyCode ==
+		Enum.KeyCode.LeftControl
+		or input.KeyCode ==
+		Enum.KeyCode.RightControl then
+
+		descendKey = true
+
+	end
+
+	if input.KeyCode ==
+		Enum.KeyCode.Equals then
+
+		speed =
+			math.min(
+				MAX_SPEED,
+				speed + 10
+			)
+
+		updateUI()
+
+	end
+
+	if input.KeyCode ==
+		Enum.KeyCode.Minus then
+
+		speed =
+			math.max(
+				MIN_SPEED,
+				speed - 10
+			)
+
+		updateUI()
+
+	end
+
+end)
+
+--========================================================
+-- KEYBOARD RELEASE
+--========================================================
+
+UserInputService.InputEnded:Connect(function(input)
+
+	if input.KeyCode ==
+		Enum.KeyCode.Space then
+
+		ascendKey = false
+
+	end
+
+	if input.KeyCode ==
+		Enum.KeyCode.LeftControl
+		or input.KeyCode ==
+		Enum.KeyCode.RightControl then
+
+		descendKey = false
+
+	end
+
+end)
+
+--========================================================
+-- BAY 3D TỰ DO
+--========================================================
+
+RunService.RenderStepped:Connect(function()
+
+	if not flying then
+		return
+	end
+
+	if not root
+		or not humanoid
+		or not linearVelocity then
+
+		return
+	end
+
+	local camera =
+		workspace.CurrentCamera
+
+	if not camera then
+		return
+	end
+
+	local move =
+		humanoid.MoveDirection
+
+	local cameraCF =
+		camera.CFrame
+
+	local forward =
+		cameraCF.LookVector
+
+	local right =
+		cameraCF.RightVector
+
+	--====================================================
+	-- CHUYỂN JOYSTICK SANG HƯỚNG CAMERA
+	--====================================================
+
+	local flatForward =
+		Vector3.new(
+			forward.X,
+			0,
+			forward.Z
+		)
+
+	local flatRight =
+		Vector3.new(
+			right.X,
+			0,
+			right.Z
+		)
+
+	if flatForward.Magnitude > 0.001 then
+		flatForward =
+			flatForward.Unit
+	end
+
+	if flatRight.Magnitude > 0.001 then
+		flatRight =
+			flatRight.Unit
+	end
+
+	local forwardAmount =
+		move:Dot(flatForward)
+
+	local rightAmount =
+		move:Dot(flatRight)
+
+	--====================================================
+	-- HƯỚNG NGANG
+	--====================================================
+
+	local horizontalDirection =
+		flatForward * forwardAmount
+		+
+		flatRight * rightAmount
+
+	--====================================================
+	-- BAY THEO GÓC CAMERA
+	--====================================================
+
+	local verticalDirection = 0
+
+	if move.Magnitude > 0.01 then
+
+		-- Joystick tiến/lùi + camera nhìn lên/xuống
+		verticalDirection =
+			forwardAmount * forward.Y
+
+	end
+
+	--====================================================
+	-- SPACE / CTRL
+	--====================================================
+
+	if ascendKey then
+		verticalDirection =
+			verticalDirection + 1
+	end
+
+	if descendKey then
+		verticalDirection =
+			verticalDirection - 1
+	end
+
+	--====================================================
+	-- HƯỚNG BAY 3D
+	--====================================================
+
+	local direction =
+		horizontalDirection
+		+
+		Vector3.new(
+			0,
+			verticalDirection,
+			0
+		)
+
+	--====================================================
+	-- BAY
+	--====================================================
+
+	if direction.Magnitude > 0.001 then
+
+		direction =
+			direction.Unit
+
+		linearVelocity.VectorVelocity =
+			direction * speed
+
+		-- Xoay nhân vật theo hướng bay ngang
+		local horizontal =
+			Vector3.new(
+				direction.X,
+				0,
+				direction.Z
+			)
+
+		if horizontal.Magnitude > 0.001 then
+
+			root.CFrame =
+				CFrame.lookAt(
+					root.Position,
+					root.Position +
+						horizontal.Unit
+				)
+
+		end
+
+	else
+
+		-- Không điều khiển = đứng yên giữa không trung
+		linearVelocity.VectorVelocity =
+			Vector3.zero
+
+	end
+
+end)
+
+--========================================================
+-- RESPAWN
+--========================================================
+
+player.CharacterAdded:Connect(function(char)
+
+	character = char
+
+	humanoid =
+		char:WaitForChild("Humanoid")
+
+	root =
+		char:WaitForChild("HumanoidRootPart")
+
+	cleanupFlight()
+
+	if flying then
+
+		task.wait(0.3)
+
+		if character
+			and humanoid
+			and root then
+
+			startFlight()
+
+		end
+
+	end
+
+end)
+
+--========================================================
+-- CHARACTER REMOVING
+--========================================================
+
+player.CharacterRemoving:Connect(function()
+
+	cleanupFlight()
+
+end)
+
+--========================================================
+-- INITIAL UI
+--========================================================
+
+updateUI()
+
+print(
+	"[AIR MOVEMENT 360] Loaded successfully | MAX SPEED 2000"
+)
