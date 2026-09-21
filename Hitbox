@@ -1,0 +1,238 @@
+-- CƯỜNG HITBOX VIP V23.1 - MENU UI 2.0 NEON GLASS - FIX LỖI
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local TweenService = game:GetService("TweenService")
+
+-- BIẾN
+local HitboxSize = 500
+local FOVSize = 150
+local HitboxOn = false
+local AimFOVOn = false
+local MenuOpen = false
+local OriginalSizes = {}
+local Shooting = false
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "CuongHitboxVIP"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = game.CoreGui
+
+local function MakeDraggable(frame)
+    local dragging, dragStart, startPos
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+        end
+    end)
+    frame.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    UIS.InputChanged:Connect(function(input)
+        if dragging then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+-- NÚT AIM
+local AimButton = Instance.new("ImageButton")
+AimButton.Size = UDim2.new(0, 90, 0, 90)
+AimButton.Position = UDim2.new(0.85, 0, 0.7, 0)
+AimButton.BackgroundTransparency = 1
+AimButton.Image = "rbxassetid://6031091002"
+AimButton.ZIndex = 10
+AimButton.AutoButtonColor = false
+AimButton.Parent = ScreenGui
+MakeDraggable(AimButton)
+
+local AimText = Instance.new("TextLabel")
+AimText.Size = UDim2.new(1, 0, 1, 0)
+AimText.BackgroundTransparency = 1
+AimText.Text = "AIM"
+AimText.Font = Enum.Font.GothamBlack
+AimText.TextSize = 20
+AimText.TextStrokeTransparency = 0
+AimText.ZIndex = 11
+AimText.Parent = AimButton
+
+task.spawn(function()
+    local hue = 0
+    while true do
+        hue = hue + 0.01
+        if hue > 1 then hue = 0 end
+        AimButton.ImageColor3 = Color3.fromHSV(hue, 1, 1)
+        AimText.TextColor3 = Color3.fromHSV(hue + 0.5, 1, 1)
+        task.wait(0.03)
+    end
+end)
+
+-- VÒNG TRÒN FOV KHAI BÁO TRƯỚC
+local FOVCircle = Instance.new("Frame")
+FOVCircle.Size = UDim2.new(0, FOVSize*2, 0, FOVSize*2)
+FOVCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
+FOVCircle.AnchorPoint = Vector2.new(0.5, 0.5)
+FOVCircle.BackgroundTransparency = 1
+FOVCircle.Visible = false
+FOVCircle.ZIndex = 2
+FOVCircle.Parent = ScreenGui
+Instance.new("UICorner", FOVCircle).CornerRadius = UDim.new(1, 0)
+local FOVStroke = Instance.new("UIStroke", FOVCircle)
+FOVStroke.Color = Color3.fromRGB(0, 255, 255)
+FOVStroke.Thickness = 2
+
+-- MENU MỚI
+local Menu = Instance.new("Frame")
+Menu.Size = UDim2.new(0, 380, 0, 280)
+Menu.Position = UDim2.new(0.5, -190, 0.5, -140)
+Menu.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
+Menu.BackgroundTransparency = 0.2
+Menu.Visible = false
+Menu.ZIndex = 5
+Menu.Parent = ScreenGui
+MakeDraggable(Menu)
+Instance.new("UICorner", Menu).CornerRadius = UDim.new(0, 16)
+local MenuStroke = Instance.new("UIStroke", Menu)
+MenuStroke.Color = Color3.fromRGB(0, 200, 255)
+MenuStroke.Thickness = 2
+MenuStroke.Transparency = 0.3
+
+-- HEADER
+local Header = Instance.new("Frame") Header.Size = UDim2.new(1, 0, 0, 50) Header.BackgroundTransparency = 1 Header.ZIndex = 6 Header.Parent = Menu
+local Title = Instance.new("TextLabel") Title.Size = UDim2.new(1, -20, 1, 0) Title.Position = UDim2.new(0, 10, 0, 0) Title.Text = "CƯỜNG VIP" Title.Font = Enum.Font.GothamBlack Title.TextSize = 24 Title.TextColor3 = Color3.fromRGB(0, 200, 255) Title.BackgroundTransparency = 1 Title.ZIndex = 7 Title.TextXAlignment = Enum.TextXAlignment.Left Title.Parent = Header
+local CloseBtn = Instance.new("TextButton") CloseBtn.Size = UDim2.new(0, 35, 0, 35) CloseBtn.Position = UDim2.new(1, -40, 0, 7) CloseBtn.Text = "X" CloseBtn.Font = Enum.Font.GothamBold CloseBtn.TextSize = 20 CloseBtn.TextColor3 = Color3.fromRGB(255,255,255) CloseBtn.BackgroundColor3 = Color3.fromRGB(255,50,50) CloseBtn.ZIndex = 7 CloseBtn.Parent = Header Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(1, 0)
+CloseBtn.MouseButton1Click:Connect(function() MenuOpen = false Menu.Visible = false end)
+
+-- TAB
+local TabFrame = Instance.new("Frame") TabFrame.Size = UDim2.new(1, -20, 0, 40) TabFrame.Position = UDim2.new(0, 10, 0, 55) TabFrame.BackgroundColor3 = Color3.fromRGB(20,20,25) TabFrame.ZIndex = 6 TabFrame.Parent = Menu Instance.new("UICorner", TabFrame).CornerRadius = UDim.new(0, 10)
+local TabHitbox = Instance.new("TextButton") TabHitbox.Size = UDim2.new(0.5, -5, 1, -6) TabHitbox.Position = UDim2.new(0, 3, 0, 3) TabHitbox.Text = "HITBOX" TabHitbox.Font = Enum.Font.GothamBold TabHitbox.TextSize = 14 TabHitbox.TextColor3 = Color3.fromRGB(255,255,255) TabHitbox.BackgroundColor3 = Color3.fromRGB(0, 200, 255) TabHitbox.ZIndex = 7 TabHitbox.Parent = TabFrame Instance.new("UICorner", TabHitbox).CornerRadius = UDim.new(0, 8)
+local TabAim = Instance.new("TextButton") TabAim.Size = UDim2.new(0.5, -5, 1, -6) TabAim.Position = UDim2.new(0.5, 2, 0, 3) TabAim.Text = "AIM FOV" TabAim.Font = Enum.Font.GothamBold TabAim.TextSize = 14 TabAim.TextColor3 = Color3.fromRGB(150,150,150) TabAim.BackgroundTransparency = 1 TabAim.ZIndex = 7 TabAim.Parent = TabFrame
+
+-- CONTENT
+local Content = Instance.new("Frame") Content.Size = UDim2.new(1, -20, 1, -110) Content.Position = UDim2.new(0, 10, 0, 100) Content.BackgroundTransparency = 1 Content.ZIndex = 6 Content.Parent = Menu
+
+-- HÀM TẠO NÚT BẬT TẮT
+local function CreateToggle(parent, text, yPos)
+    local frame = Instance.new("Frame") frame.Size = UDim2.new(1, 0, 0, 50) frame.Position = UDim2.new(0, 0, 0, yPos) frame.BackgroundColor3 = Color3.fromRGB(25,25,30) frame.ZIndex = 7 frame.Parent = parent Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+    local label = Instance.new("TextLabel") label.Size = UDim2.new(0.6, 0, 1, 0) label.Text = text label.Font = Enum.Font.GothamBold label.TextSize = 16 label.TextColor3 = Color3.fromRGB(255,255,255) label.BackgroundTransparency = 1 label.ZIndex = 8 label.TextXAlignment = Enum.TextXAlignment.Left label.Position = UDim2.new(0, 15, 0, 0) label.Parent = frame
+    local toggle = Instance.new("TextButton") toggle.Size = UDim2.new(0, 50, 0, 28) toggle.Position = UDim2.new(1, -60, 0, 11) toggle.Text = "" toggle.BackgroundColor3 = Color3.fromRGB(60,60,60) toggle.ZIndex = 8 toggle.Parent = frame Instance.new("UICorner", toggle).CornerRadius = UDim.new(1, 0)
+    local circle = Instance.new("Frame") circle.Size = UDim2.new(0, 22, 0, 22) circle.Position = UDim2.new(0, 3, 0, 3) circle.BackgroundColor3 = Color3.fromRGB(255,255,255) circle.ZIndex = 9 circle.Parent = toggle Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
+    return toggle, circle
+end
+
+-- HÀM TẠO NÚT + -
+local function CreateSlider(parent, text, yPos, value)
+    local frame = Instance.new("Frame") frame.Size = UDim2.new(1, 0, 0, 50) frame.Position = UDim2.new(0, 0, 0, yPos) frame.BackgroundColor3 = Color3.fromRGB(25,25,30) frame.ZIndex = 7 frame.Parent = parent Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+    local label = Instance.new("TextLabel") label.Size = UDim2.new(0.4, 0, 1, 0) label.Text = text label.Font = Enum.Font.GothamBold label.TextSize = 16 label.TextColor3 = Color3.fromRGB(255,255,255) label.BackgroundTransparency = 1 label.ZIndex = 8 label.TextXAlignment = Enum.TextXAlignment.Left label.Position = UDim2.new(0, 15, 0, 0) label.Parent = frame
+    local minus = Instance.new("TextButton") minus.Size = UDim2.new(0, 35, 0, 35) minus.Position = UDim2.new(1, -120, 0, 7) minus.Text = "-" minus.Font = Enum.Font.GothamBold minus.TextSize = 20 minus.TextColor3 = Color3.fromRGB(255,255,255) minus.BackgroundColor3 = Color3.fromRGB(40,40,45) minus.ZIndex = 8 minus.Parent = frame Instance.new("UICorner", minus).CornerRadius = UDim.new(0, 8)
+    local valuelabel = Instance.new("TextLabel") valuelabel.Size = UDim2.new(0, 50, 0, 35) valuelabel.Position = UDim2.new(1, -80, 0, 7) valuelabel.Text = tostring(value) valuelabel.Font = Enum.Font.GothamBold valuelabel.TextSize = 16 valuelabel.TextColor3 = Color3.fromRGB(0, 200, 255) valuelabel.BackgroundTransparency = 1 valuelabel.ZIndex = 8 valuelabel.Parent = frame
+    local plus = Instance.new("TextButton") plus.Size = UDim2.new(0, 35, 0, 35) plus.Position = UDim2.new(1, -40, 0, 7) plus.Text = "+" plus.Font = Enum.Font.GothamBold plus.TextSize = 20 plus.TextColor3 = Color3.fromRGB(255,255,255) plus.BackgroundColor3 = Color3.fromRGB(40,40,45) plus.ZIndex = 8 plus.Parent = frame Instance.new("UICorner", plus).CornerRadius = UDim.new(0, 8)
+    return minus, plus, valuelabel
+end
+
+-- TAB 1: HITBOX
+local HitboxTab = Instance.new("Frame") HitboxTab.Size = UDim2.new(1,0,1,0) HitboxTab.BackgroundTransparency = 1 HitboxTab.ZIndex = 7 HitboxTab.Parent = Content
+local HitboxToggle, HitboxCircle = CreateToggle(HitboxTab, "Main Hitbox", 0)
+local MinusBtn, PlusBtn, SizeLabel = CreateSlider(HitboxTab, "Hitbox Size", 60, HitboxSize)
+
+-- TAB 2: AIMFOV
+local AimFOVTab = Instance.new("Frame") AimFOVTab.Size = UDim2.new(1,0,1,0) AimFOVTab.BackgroundTransparency = 1 AimFOVTab.Visible = false AimFOVTab.ZIndex = 7 AimFOVTab.Parent = Content
+local AimFOVToggleBtn, AimFOVCircle = CreateToggle(AimFOVTab, "Aim FOV", 0)
+local FOVMinus, FOVPlus, FOVValue = CreateSlider(AimFOVTab, "FOV Size", 60, FOVSize)
+
+-- CHUYỂN TAB
+TabHitbox.MouseButton1Click:Connect(function()
+    HitboxTab.Visible = true AimFOVTab.Visible = false
+    TabHitbox.BackgroundColor3 = Color3.fromRGB(0, 200, 255) TabHitbox.TextColor3 = Color3.fromRGB(255,255,255)
+    TabAim.BackgroundTransparency = 1 TabAim.TextColor3 = Color3.fromRGB(150,150,150)
+end)
+TabAim.MouseButton1Click:Connect(function()
+    HitboxTab.Visible = false AimFOVTab.Visible = true
+    TabAim.BackgroundColor3 = Color3.fromRGB(0, 200, 255) TabAim.TextColor3 = Color3.fromRGB(255,255,255)
+    TabHitbox.BackgroundTransparency = 1 TabHitbox.TextColor3 = Color3.fromRGB(150,150,150)
+end)
+
+-- SỰ KIỆN NÚT AIM
+AimButton.Activated:Connect(function()
+    MenuOpen = not MenuOpen
+    Menu.Visible = MenuOpen
+end)
+
+-- SỰ KIỆN HITBOX
+HitboxToggle.MouseButton1Click:Connect(function()
+    HitboxOn = not HitboxOn
+    TweenService:Create(HitboxToggle, TweenInfo.new(0.2), {BackgroundColor3 = HitboxOn and Color3.fromRGB(0, 200, 255) or Color3.fromRGB(60,60,60)}):Play()
+    TweenService:Create(HitboxCircle, TweenInfo.new(0.2), {Position = HitboxOn and UDim2.new(1, -25, 0, 3) or UDim2.new(0, 3, 0, 3)}):Play()
+end)
+MinusBtn.MouseButton1Click:Connect(function() HitboxSize = math.max(500, HitboxSize - 500) SizeLabel.Text = tostring(HitboxSize) end)
+PlusBtn.MouseButton1Click:Connect(function() HitboxSize = math.min(6000, HitboxSize + 500) SizeLabel.Text = tostring(HitboxSize) end)
+
+-- SỰ KIỆN AIMFOV
+AimFOVToggleBtn.MouseButton1Click:Connect(function()
+    AimFOVOn = not AimFOVOn
+    FOVCircle.Visible = AimFOVOn
+    TweenService:Create(AimFOVToggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = AimFOVOn and Color3.fromRGB(0, 200, 255) or Color3.fromRGB(60,60,60)}):Play()
+    TweenService:Create(AimFOVCircle, TweenInfo.new(0.2), {Position = AimFOVOn and UDim2.new(1, -25, 0, 3) or UDim2.new(0, 3, 0, 3)}):Play()
+end)
+FOVMinus.MouseButton1Click:Connect(function() FOVSize = math.max(50, FOVSize - 50) FOVValue.Text = tostring(FOVSize) FOVCircle.Size = UDim2.new(0, FOVSize*2, 0, FOVSize*2) end)
+FOVPlus.MouseButton1Click:Connect(function() FOVSize = math.min(500, FOVSize + 50) FOVValue.Text = tostring(FOVSize) FOVCircle.Size = UDim2.new(0, FOVSize*2, 0, FOVSize*2) end)
+
+local function GetTargetInFOV()
+    local closest, shortest = nil, math.huge
+    local center = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+    for _,v in pairs(Players:GetPlayers()) do
+        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Character:FindFirstChild("Humanoid") then
+            if v.Character.Humanoid.Health > 0 then
+                local pos, onScreen = Camera:WorldToViewportPoint(v.Character.HumanoidRootPart.Position)
+                if onScreen then
+                    local dist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
+                    if dist < FOVSize and dist < shortest then
+                        closest = v
+                        shortest = dist
+                    end
+                end
+            end
+        end
+    end
+    return closest
+end
+
+UIS.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        local touchPos = input.Position
+        local screenSize = Camera.ViewportSize
+        if touchPos.X > screenSize.X * 0.6 and touchPos.Y > screenSize.Y * 0.4 then
+            Shooting = true
+        end
+    end
+end)
+UIS.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.Touch then Shooting = false end end)
+
+RunService.RenderStepped:Connect(function()
+    for _,v in pairs(Players:GetPlayers()) do
+        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = v.Character.HumanoidRootPart
+            if not OriginalSizes[v] then OriginalSizes[v] = hrp.Size end
+            if HitboxOn then
+                hrp.Size = Vector3.new(HitboxSize/100, HitboxSize/100, HitboxSize/100)
+                hrp.Transparency = 0.5 hrp.BrickColor = BrickColor.new("Bright red") hrp.Material = Enum.Material.ForceField hrp.CanCollide = false
+            else
+                hrp.Size = OriginalSizes[v] hrp.Transparency = 1
+            end
+        end
+    end
+    if AimFOVOn and Shooting then
+        local Target = GetTargetInFOV()
+        if Target and Target.Character and Target.Character:FindFirstChild("Head") then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, Target.Character.Head.Position)
+        end
+    end
+end)
